@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keputusan Pengiraan Ukur Aras</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h2, h3 {
+            color: #1a5276;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background-color: #f8f9f9;
+            border-left: 4px solid #2980b9;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #d5dbdb;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #2980b9;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .info-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        .info-list li {
+            padding: 5px 0;
+            font-size: 15px;
+        }
+        .bold {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Laporan Pembukuan & Pelarasan Ukur Aras</h2>
+
+    <!-- Ringkasan Ralat -->
+    <div class="section">
+        <h3>1. Semakan Aritmetik & Ralat Penutup</h3>
+        <ul class="info-list" id="arithmetic-check">
+            <!-- Isi kandungan dari JavaScript -->
+        </ul>
+    </div>
+
+    <!-- Jadual Keputusan -->
+    <div class="section">
+        <h3>2. Jadual Keputusan Akhir</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Stesen</th>
+                    <th>Jarak (m)</th>
+                    <th>Aras Laras Mentah (m)</th>
+                    <th>Pembetulan (m)</th>
+                    <th>Aras Laras Sebenar (m)</th>
+                </tr>
+            </thead>
+            <tbody id="result-table">
+                <!-- Isi kandungan dari JavaScript -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Data Ukur Aras dari Borang Pembukuan
+    const data = [
+        // { stesen, bs, fs, jarak }
+        { stesen: "TBM1", bs: 0.972, fs: null, jarak: 0 },
+        { stesen: "CP1", bs: 1.427, fs: 1.413, jarak: 40 },
+        { stesen: "CP2", bs: 1.480, fs: 1.505, jarak: 80 },
+        { stesen: "CP3", bs: 1.438, fs: 1.510, jarak: 120 },
+        { stesen: "CP4", bs: 1.463, fs: 1.421, jarak: 160 },
+        { stesen: "CP5", bs: 1.590, fs: 1.355, jarak: 200 },
+        { stesen: "TBM2", bs: null, fs: 1.142, jarak: 236 }
+    ];
+
+    const aras_laras_mula = 44.725;
+    const aras_laras_sasaran = 44.725;
+
+    const n = data.length;
+    let aras_laras = new Array(n).fill(0.0);
+    aras_laras[0] = aras_laras_mula;
+
+    let sum_bs = 0.0;
+    let sum_fs = 0.0;
+    let jumlah_naik = 0.0;
+    let jumlah_turun = 0.0;
+
+    // 1. Pengiraan Naik / Turun & Aras Laras Mentah
+    for (let i = 0; i < n; i++) {
+        if (data[i].bs !== null) sum_bs += data[i].bs;
+        if (data[i].fs !== null) sum_fs += data[i].fs;
+
+        if (i > 0) {
+            let prev_bs = data[i - 1].bs;
+            let diff = prev_bs - data[i].fs;
+
+            if (diff > 0) {
+                jumlah_naik += diff;
+            } else {
+                jumlah_turun += Math.abs(diff);
+            }
+
+            aras_laras[i] = aras_laras[i - 1] + diff;
+        }
+    }
+
+    // 2. Semakan Ukur Aras (Arithmetic Check)
+    const diff_bs_fs = sum_bs - sum_fs;
+    const diff_naik_turun = jumlah_naik - jumlah_turun;
+    const diff_al = aras_laras[n - 1] - aras_laras_mula;
+
+    const ralat_penutup = aras_laras[n - 1] - aras_laras_sasaran;
+    const jarak_keseluruhan = data[n - 1].jarak;
+
+    // Paparkan Semakan Aritmetik ke HTML
+    const checkContainer = document.getElementById("arithmetic-check");
+    checkContainer.innerHTML = `
+        <li><span class="bold">Jumlah BS - Jumlah FS:</span> ${sum_bs.toFixed(3)} - ${sum_fs.toFixed(3)} = <b>${diff_bs_fs.toFixed(3)} m</b></li>
+        <li><span class="bold">Jumlah Naik - Jumlah Turun:</span> ${jumlah_naik.toFixed(3)} - ${jumlah_turun.toFixed(3)} = <b>${diff_naik_turun.toFixed(3)} m</b></li>
+        <li><span class="bold">Aras Laras Akhir - Aras Laras Mula:</span> ${aras_laras[n - 1].toFixed(3)} - ${aras_laras_mula.toFixed(3)} = <b>${diff_al.toFixed(3)} m</b></li>
+        <li style="margin-top:10px; font-size: 16px; color: #c0392b;"><span class="bold">Ralat Penutup:</span> <b>${ralat_penutup.toFixed(3)} m</b></li>
+    `;
+
+    // 3. Pelarasan & Paparan Jadual
+    const tableBody = document.getElementById("result-table");
+    let tableRowsHTML = "";
+
+    for (let i = 0; i < n; i++) {
+        let pembetulan = - (data[i].jarak / jarak_keseluruhan) * ralat_penutup;
+        let aras_laras_sebenar = aras_laras[i] + pembetulan;
+
+        tableRowsHTML += `
+            <tr>
+                <td><b>${data[i].stesen}</b></td>
+                <td>${data[i].jarak}</td>
+                <td>${aras_laras[i].toFixed(3)}</td>
+                <td>${pembetulan.toFixed(4)}</td>
+                <td><b>${aras_laras_sebenar.toFixed(4)}</b></td>
+            </tr>
+        `;
+    }
+
+    tableBody.innerHTML = tableRowsHTML;
+</script>
+
+</body>
+</html>
